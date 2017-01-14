@@ -1,0 +1,1097 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Self-Driving Car Engineer Nanodegree\n",
+    "\n",
+    "## Deep Learning\n",
+    "\n",
+    "## Project: Build a Traffic Sign Recognition Classifier\n",
+    "\n",
+    "In this notebook, a template is provided for you to implement your functionality in stages which is required to successfully complete this project. If additional code is required that cannot be included in the notebook, be sure that the Python code is successfully imported and included in your submission, if necessary. Sections that begin with **'Implementation'** in the header indicate where you should begin your implementation for your project. Note that some sections of implementation are optional, and will be marked with **'Optional'** in the header.\n",
+    "\n",
+    "In addition to implementing code, there will be questions that you must answer which relate to the project and your implementation. Each section where you will answer a question is preceded by a **'Question'** header. Carefully read each question and provide thorough answers in the following text boxes that begin with **'Answer:'**. Your project submission will be evaluated based on your answers to each of the questions and the implementation you provide.\n",
+    "\n",
+    ">**Note:** Code and Markdown cells can be executed using the **Shift + Enter** keyboard shortcut. In addition, Markdown cells can be edited by typically double-clicking the cell to enter edit mode."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "---\n",
+    "## Step 0: Load The Data"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "# Load pickled data\n",
+    "import pickle\n",
+    "\n",
+    "# TODO: Fill this in based on where you saved the training and testing data\n",
+    "\n",
+    "training_file = 'traffic-signs-data/train.p'\n",
+    "testing_file = 'traffic-signs-data/test.p'\n",
+    "\n",
+    "with open(training_file, mode='rb') as f:\n",
+    "    train = pickle.load(f)\n",
+    "with open(testing_file, mode='rb') as f:\n",
+    "    test = pickle.load(f)\n",
+    "    \n",
+    "X_train_set, y_train_set = train['features'], train['labels']\n",
+    "X_test, y_test = test['features'], test['labels']\n",
+    "\n",
+    "# Add validation set\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "\n",
+    "X_train, X_validation, y_train, y_validation = train_test_split(X_train_set, y_train_set, test_size=0.25,\n",
+    "                                                                random_state=42, stratify=y_train_set)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "---\n",
+    "\n",
+    "## Step 1: Dataset Summary & Exploration\n",
+    "\n",
+    "The pickled data is a dictionary with 4 key/value pairs:\n",
+    "\n",
+    "- `'features'` is a 4D array containing raw pixel data of the traffic sign images, (num examples, width, height, channels).\n",
+    "- `'labels'` is a 2D array containing the label/class id of the traffic sign. The file `signnames.csv` contains id -> name mappings for each id.\n",
+    "- `'sizes'` is a list containing tuples, (width, height) representing the the original width and height the image.\n",
+    "- `'coords'` is a list containing tuples, (x1, y1, x2, y2) representing coordinates of a bounding box around the sign in the image. **THESE COORDINATES ASSUME THE ORIGINAL IMAGE. THE PICKLED DATA CONTAINS RESIZED VERSIONS (32 by 32) OF THESE IMAGES**\n",
+    "\n",
+    "Complete the basic data summary below."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "import numpy as np\n",
+    "\n",
+    "# TODO: Number of training examples\n",
+    "n_train = len(X_train_set)\n",
+    "\n",
+    "n_validation = len(X_validation)\n",
+    "\n",
+    "# TODO: Number of testing examples.\n",
+    "n_test = len(X_test)\n",
+    "\n",
+    "# TODO: What's the shape of an traffic sign image?\n",
+    "image_shape = X_train_set[0].shape\n",
+    "\n",
+    "# TODO: How many unique classes/labels there are in the dataset.\n",
+    "n_classes = max(np.append(y_train_set, y_test))\n",
+    "\n",
+    "print(\"Number of training examples =\", n_train)\n",
+    "print(\"Number of validation examples =\", n_validation)\n",
+    "print(\"Number of testing examples =\", n_test)\n",
+    "print(\"Image data shape =\", image_shape)\n",
+    "print(\"Number of classes =\", n_classes)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Visualize the German Traffic Signs Dataset using the pickled file(s). This is open ended, suggestions include: plotting traffic sign images, plotting the count of each sign, etc.\n",
+    "\n",
+    "The [Matplotlib](http://matplotlib.org/) [examples](http://matplotlib.org/examples/index.html) and [gallery](http://matplotlib.org/gallery.html) pages are a great resource for doing visualizations in Python.\n",
+    "\n",
+    "**NOTE:** It's recommended you start with something simple first. If you wish to do more, come back to it after you've completed the rest of the sections."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**My notes**\n",
+    "\n",
+    "Cross-validation set is 9803. So to have a significant impact on accuracy on cross-validation set I have to improve it more than  0.33% (32.5 examples)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "### Data exploration visualization goes here.\n",
+    "### Feel free to use as many code cells as needed.\n",
+    "import random\n",
+    "import matplotlib.pyplot as plt\n",
+    "# Visualizations will be shown in the notebook.\n",
+    "%matplotlib inline\n",
+    "\n",
+    "fig = plt.figure(figsize=(7,7))\n",
+    "fig.subplots_adjust(bottom=-0.3, left=0.025, top = 1.0, right=0.975)\n",
+    "for class_value in range(0, n_classes + 1):\n",
+    "    train_class = [X_train[index] for index, value in enumerate(y_train) if value == class_value]\n",
+    "    validation_class = [X_validation[index] for index, value in enumerate(y_validation) if value == class_value]\n",
+    "    test_class = [X_test[index] for index, value in enumerate(y_test) if value == class_value]\n",
+    "    \n",
+    "    print()\n",
+    "    print(\"Class to explore\", class_value)\n",
+    "    print(\"Train data count is\", len(train_class))\n",
+    "    print(\"Validation data count is\", len(validation_class))\n",
+    "    print(\"Test data count is\", len(test_class))\n",
+    "    \n",
+    "    index = random.randint(0, len(train_class))\n",
+    "    image = train_class[index]\n",
+    "    \n",
+    "    subplot = plt.subplot(8, 7, 1 + class_value)\n",
+    "    subplot.imshow(image)\n",
+    "    subplot.axis('off')\n",
+    "    subplot.set_title(class_value, fontsize = 10)\n",
+    "    print(\"Max image value\", np.max(image))\n",
+    "    print(\"Min image value\", np.min(image))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "----\n",
+    "\n",
+    "## Step 2: Design and Test a Model Architecture\n",
+    "\n",
+    "Design and implement a deep learning model that learns to recognize traffic signs. Train and test your model on the [German Traffic Sign Dataset](http://benchmark.ini.rub.de/?section=gtsrb&subsection=dataset).\n",
+    "\n",
+    "There are various aspects to consider when thinking about this problem:\n",
+    "\n",
+    "- Neural network architecture\n",
+    "- Play around preprocessing techniques (normalization, rgb to grayscale, etc)\n",
+    "- Number of examples per label (some have more than others).\n",
+    "- Generate fake data.\n",
+    "\n",
+    "Here is an example of a [published baseline model on this problem](http://yann.lecun.com/exdb/publis/pdf/sermanet-ijcnn-11.pdf). It's not required to be familiar with the approach used in the paper but, it's good practice to try to read papers like these.\n",
+    "\n",
+    "**NOTE:** The LeNet-5 implementation shown in the [classroom](https://classroom.udacity.com/nanodegrees/nd013/parts/fbf77062-5703-404e-b60c-95b78b2f3f9e/modules/6df7ae49-c61c-4bb2-a23e-6527e69209ec/lessons/601ae704-1035-4287-8b11-e2c2716217ad/concepts/d4aca031-508f-4e0b-b493-e7b706120f81) at the end of the CNN lesson is a solid starting point. You'll have to change the number of classes and possibly the preprocessing, but aside from that it's plug and play!"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Implementation\n",
+    "\n",
+    "Use the code cell (or multiple code cells, if necessary) to implement the first step of your project. Once you have completed your implementation and are satisfied with the results, be sure to thoroughly answer the questions that follow."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "*Data preprocessing*"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "import cv2\n",
+    "\n",
+    "class Preprocessor:\n",
+    "    def __init__(self, operation):\n",
+    "        self.operation = operation\n",
+    "        \n",
+    "class PreprocessorInput(Preprocessor):\n",
+    "    def __init__(self, x):\n",
+    "        Preprocessor.__init__(self, x)\n",
+    "    def process(self):\n",
+    "        return self.operation\n",
+    "        \n",
+    "class ExtractHFromHSV(Preprocessor):\n",
+    "    def __init__(self, operation):\n",
+    "        Preprocessor.__init__(self, operation)\n",
+    "    def process(self):\n",
+    "        data = self.operation.process()\n",
+    "        return cv2.cvtColor(data, cv2.COLOR_BGR2HSV)[:,:,2:3]\n",
+    "    \n",
+    "class ExtractYFromYUV(Preprocessor):\n",
+    "    def __init__(self, operation):\n",
+    "        Preprocessor.__init__(self, operation)\n",
+    "    def process(self):\n",
+    "        data = self.operation.process()\n",
+    "        return cv2.cvtColor(data, cv2.COLOR_BGR2YUV)[:,:,0:1]\n",
+    "    \n",
+    "class Normalization(Preprocessor):\n",
+    "    def __init__(self, operation, a, b):\n",
+    "        Preprocessor.__init__(self, operation)\n",
+    "        self.a = a\n",
+    "        self.b = b\n",
+    "    def process(self):\n",
+    "        data = self.operation.process()\n",
+    "        data = data.astype(float)\n",
+    "        return self.a + (data*(self.b-self.a)/255)\n",
+    "    \n",
+    "class HistogramEqualization(Preprocessor):\n",
+    "    def __init__(self, operation):\n",
+    "        Preprocessor.__init__(self, operation)\n",
+    "    def process(self):\n",
+    "        data = self.operation.process()\n",
+    "        if (data.shape[2] == 1):\n",
+    "            data = np.expand_dims(cv2.equalizeHist(data), axis=2)\n",
+    "        else:\n",
+    "            img_yuv = cv2.cvtColor(data, cv2.COLOR_BGR2YUV)\n",
+    "            img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])\n",
+    "            data = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)\n",
+    "        return data\n",
+    "    \n",
+    "class Grayscale(Preprocessor):\n",
+    "    def __init__(self, operation):\n",
+    "        Preprocessor.__init__(self, operation)\n",
+    "    def process(self):\n",
+    "        data = self.operation.process()\n",
+    "        return np.expand_dims(cv2.cvtColor(data, cv2.COLOR_BGR2GRAY), axis=2)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "*Data augmentaion*"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "import matplotlib.gridspec as gridspec\n",
+    "import matplotlib.image as mpimg\n",
+    "\n",
+    "def change_brightness(image):\n",
+    "    image_hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)\n",
+    "    random_bright = np.random.randint(10,50)\n",
+    "    value_layer = image_hsv[:,:,2]\n",
+    "    image_hsv[:,:,2] = np.maximum(value_layer - random_bright, np.zeros(value_layer.shape))\n",
+    "    return cv2.cvtColor(image_hsv, cv2.COLOR_HSV2RGB)\n",
+    "\n",
+    "def rotate_image(img):\n",
+    "    rotation_angle = np.random.randint(5,15)\n",
+    "    rows,cols,ch = img.shape    \n",
+    "    rotation_matrix = cv2.getRotationMatrix2D((cols/2,rows/2), rotation_angle, 1)\n",
+    "    return cv2.warpAffine(img, rotation_matrix, (cols,rows))  \n",
+    "\n",
+    "def affine_transformation(img):\n",
+    "    deviation = np.random.randint(-3,3)\n",
+    "    \n",
+    "    rows,cols,ch = img.shape\n",
+    "    pts1 = np.float32([[5,5],[20,5],[5,20]])\n",
+    "    pts2 = np.float32([[1,10+deviation],[20-deviation,5],[10,30-deviation]])\n",
+    "           \n",
+    "    #translate to stay inside the frame\n",
+    "    M = np.float32([[1,0,-3],[0,1,-3]])\n",
+    "    img = cv2.warpAffine(img, M, (cols,rows))\n",
+    "    \n",
+    "    # scale to stay inside the frame\n",
+    "    rotation_matrix = cv2.getRotationMatrix2D((cols/2,rows/2), 0, 0.7)\n",
+    "    img = cv2.warpAffine(img, rotation_matrix, (cols,rows)) \n",
+    "        \n",
+    "    M = cv2.getAffineTransform(pts1,pts2)\n",
+    "    return cv2.warpAffine(img,M,(cols,rows))   \n",
+    "\n",
+    "def add_motion_blur(img):\n",
+    "    size = 3\n",
+    "\n",
+    "    # generating the kernel\n",
+    "    kernel_motion_blur = np.zeros((size, size))\n",
+    "    kernel_motion_blur[int((size-1)/2), :] = np.ones(size)\n",
+    "    kernel_motion_blur = kernel_motion_blur / size\n",
+    "    \n",
+    "    return cv2.filter2D(img, -1, kernel_motion_blur)\n",
+    "\n",
+    "def generate_image(img):\n",
+    "    #while True:\n",
+    "    image_operations = np.random.randint(2,size=3)\n",
+    "    #    if (max(image_operations) == 1):\n",
+    "    #        break      \n",
+    "    if (image_operations[0] == 1):\n",
+    "        img = affine_transformation(img)\n",
+    "    else:\n",
+    "        img = rotate_image(img)\n",
+    "    if (image_operations[1] == 1):\n",
+    "        img = change_brightness(img)\n",
+    "    if (image_operations[2] == 1):\n",
+    "        img = add_motion_blur(img)\n",
+    "    return img"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "image = X_train[0]\n",
+    "print(X_train.shape)\n",
+    "for i in range(0, 5):\n",
+    "    new_image = generate_image(image)\n",
+    "    plt.figure()\n",
+    "    plt.imshow(new_image)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "augmentation_level = 700\n",
+    "\n",
+    "print(X_train.shape)\n",
+    "print(y_train.shape)\n",
+    "\n",
+    "for class_value in range(0, n_classes + 1):\n",
+    "    train_class = [X_train[index] for index, value in enumerate(y_train) if value == class_value]\n",
+    "    print(\"class\", class_value)\n",
+    "    if (len(train_class) < augmentation_level):\n",
+    "        to_train = augmentation_level - len(train_class)\n",
+    "        print(\"to train\", to_train)\n",
+    "        image_per = int(to_train/len(train_class)) + 1\n",
+    "        for i in range(0, len(train_class)):\n",
+    "            base_image = train_class[i]\n",
+    "            for iteration in range(0, image_per):\n",
+    "                new_image = generate_image(base_image)\n",
+    "                X_train = np.concatenate((X_train, [new_image]), axis=0)\n",
+    "                y_train = np.append(y_train, class_value)\n",
+    "        print(X_train.shape)\n",
+    "        print(y_train.shape)\n",
+    "        \n",
+    "for class_value in range(0, n_classes + 1):\n",
+    "    train_class = [X_train[index] for index, value in enumerate(y_train) if value == class_value]\n",
+    "    \n",
+    "    print()\n",
+    "    print(\"Class to explore\", class_value)\n",
+    "    print(\"Train data count is\", len(train_class))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "*Preprocessing results (over LeNet atchitecture)*\n",
+    "\n",
+    "**Unchanged data**\n",
+    "\n",
+    "    EPOCH 3: 0.883, EPOCH 10: 0.183\n",
+    "**H layer from HSV**\n",
+    "\n",
+    "    EPOCH 6: = 0.875, EPOCH 10: 0.143\n",
+    "**Y layer from YUV**\n",
+    "\n",
+    "    EPOCH 3: 0.906, EPOCH 10: 0.235\n",
+    "**Normalization of unchanged data**(the slowest overfit)\n",
+    "\n",
+    "    EPOCH 2: 0.889, EPOCH 10: 0.624\n",
+    "**Normalization of Y**\n",
+    "\n",
+    "    EPOCH 3: 0.908, EPOCH 10: 0.580\n",
+    "**Normalization of H** (slowly overfit!)\n",
+    "\n",
+    "    EPOCH 3: 0.849, EPOCH 10: 0.375\n",
+    "\n",
+    "**Histogram equalization**\n",
+    "\n",
+    "    EPOCH 4: 0.856, EPOCH 10: 0.212\n",
+    "    \n",
+    "**Histogram equalization of H**\n",
+    "\n",
+    "    EPOCH 4: 0.891, EPOCH 10: 0.213    \n",
+    "    \n",
+    "**Histogram equalization of Y**\n",
+    "\n",
+    "    EPOCH 4: 0.895, EPOCH 10: 0.193 \n",
+    "    \n",
+    "**Augmentation with affin transformation**\n",
+    "\n",
+    "    EPOCH 2: 0.675, EPOCH 10: 0.092\n",
+    "    \n",
+    "**Dropout before logits**\n",
+    "\n",
+    "    EPOCH 16: 0.960\n",
+    "    \n",
+    "**Dropout after the first FC**\n",
+    "\n",
+    "    EPOCH 10: 0.862, 20: 0.086\n",
+    "    \n",
+    "**Dropout after both FC**\n",
+    "\n",
+    "    EPOCH 27: 0.881, 35: 0.061"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "def preprocess_data(x):\n",
+    "    preprocessor_input = PreprocessorInput(x)\n",
+    "    \n",
+    "    #h_layer = ExtractHFromHSV(preprocessor_input)\n",
+    "    \n",
+    "    #h_layer = ExtractYFromYUV(preprocessor_input) \n",
+    "    \n",
+    "    equalized = HistogramEqualization(preprocessor_input)\n",
+    "    \n",
+    "    #gray = Grayscale(equalized)\n",
+    "    \n",
+    "    normalized = Normalization(equalized, -1.0, 1.0)\n",
+    "      \n",
+    "    return normalized.process()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "INPUT_DEPTH = 3\n",
+    "\n",
+    "X_train_processed = []\n",
+    "X_validation_processed = []\n",
+    "X_test_processed = []\n",
+    "\n",
+    "for sample in X_train:\n",
+    "    X_train_processed.append(preprocess_data(sample))\n",
+    "for sample in X_validation:\n",
+    "    X_validation_processed.append(preprocess_data(sample))\n",
+    "for sample in X_test:\n",
+    "    X_test_processed.append(preprocess_data(sample))\n",
+    "\n",
+    "image = X_train[0]\n",
+    "print(\"Max image value\", np.max(image))\n",
+    "print(\"Min image value\", np.min(image))\n",
+    "print(\"Image shape\", image.shape)\n",
+    "plt.figure()\n",
+    "plt.imshow(image)\n",
+    "plt.title(\"original\")\n",
+    "\n",
+    "image = X_train_processed[0]\n",
+    "print(\"Max image value\", np.max(image))\n",
+    "print(\"Min image value\", np.min(image))\n",
+    "print(\"Image shape\", image.shape)\n",
+    "plt.figure()\n",
+    "if (len(image.shape) == 3 and image.shape[2] == 1):\n",
+    "    plt.imshow(image[:, :, 0], cmap='gray')\n",
+    "else:\n",
+    "    plt.imshow(image)\n",
+    "plt.title(\"processed\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "*Network configuration*"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "### Preprocess the data here.\n",
+    "### Feel free to use as many code cells as needed.\n",
+    "from sklearn.utils import shuffle\n",
+    "import tensorflow as tf\n",
+    "\n",
+    "tf.reset_default_graph()\n",
+    "\n",
+    "EPOCHS = 100\n",
+    "BATCH_SIZE = 128\n",
+    "rate = 0.00001\n",
+    "DROPOT_KEEP_PROP = 0.5\n",
+    "\n",
+    "x = tf.placeholder(tf.float32, (None, 32, 32, INPUT_DEPTH))\n",
+    "y = tf.placeholder(tf.int32, (None))\n",
+    "keep_prob = tf.placeholder(tf.float32)\n",
+    "\n",
+    "with tf.device('/cpu:0'):\n",
+    "    one_hot_y = tf.one_hot(y, n_classes)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "from tensorflow.contrib.layers import flatten\n",
+    "    \n",
+    "class Layer:\n",
+    "    def __init__(self, layer):\n",
+    "        self.layer = layer\n",
+    "        \n",
+    "class Input(Layer):\n",
+    "    def __init(self, x):\n",
+    "        Layer.__init__(self, x)\n",
+    "    def build(self):\n",
+    "        return self.layer \n",
+    "    \n",
+    "class Convolution2dRelu(Layer):\n",
+    "    def __init__(self, layer, weights_shape, bias_shape, mean, sigma, stride=1):\n",
+    "        Layer.__init__(self, layer)\n",
+    "        self.weights_shape = weights_shape\n",
+    "        self.bias_shape = bias_shape\n",
+    "        self.stride = stride\n",
+    "        self.mean = mean\n",
+    "        self.sigma = sigma\n",
+    "    def build(self):\n",
+    "        data = self.layer.build()\n",
+    "        weights = tf.Variable(tf.truncated_normal(shape=self.weights_shape, mean = self.mean, stddev = self.sigma))\n",
+    "        bias = tf.Variable(tf.zeros(self.bias_shape))\n",
+    "        conv = tf.nn.conv2d(data, weights, strides=[1, self.stride, self.stride, 1], padding='VALID')\n",
+    "        conv = tf.nn.bias_add(conv, bias)\n",
+    "        return tf.nn.relu(conv)\n",
+    "\n",
+    "class MaxPool2d(Layer):\n",
+    "    def __init__(self, layer, k=2):\n",
+    "        Layer.__init__(self, layer)\n",
+    "        self.k = k\n",
+    "    def build(self):\n",
+    "        return tf.nn.max_pool(self.layer.build(), ksize=[1, self.k, self.k, 1], strides=[1, self.k, self.k, 1], padding='VALID')\n",
+    "    \n",
+    "class Flatten(Layer):\n",
+    "    def __init__(self, layer):\n",
+    "        Layer.__init__(self, layer)\n",
+    "    def build(self):\n",
+    "        data = self.layer.build()\n",
+    "        return flatten(data)\n",
+    "    \n",
+    "class Combine(Layer):\n",
+    "    def __init__(self, layer1, layer2):\n",
+    "        Layer.__init__(self, layer1)\n",
+    "        self.layer2 = layer2\n",
+    "    def build(self):\n",
+    "        data1 = self.layer.build()\n",
+    "        data2 = self.layer2.build()\n",
+    "        result = tf.concat(1, [data1, data2])\n",
+    "        return result\n",
+    "    \n",
+    "class Linear(Layer):\n",
+    "    def __init__(self, layer, weights_shape, bias_shape, mean, sigma):\n",
+    "        Layer.__init__(self, layer)\n",
+    "        self.weights_shape = weights_shape\n",
+    "        self.bias_shape = bias_shape\n",
+    "        self.mean = mean\n",
+    "        self.sigma = sigma\n",
+    "    def build(self):\n",
+    "        data = self.layer.build()\n",
+    "        weights = tf.Variable(tf.truncated_normal(shape=self.weights_shape, mean = mu, stddev = sigma))\n",
+    "        bias = tf.Variable(tf.zeros(self.bias_shape))\n",
+    "        linear = tf.matmul(data, weights)\n",
+    "        return tf.nn.bias_add(linear, bias)\n",
+    "\n",
+    "class LinearRelu(Linear):\n",
+    "    def __init__(self, layer, weights_shape, bias_shape, mean, sigma):\n",
+    "        Linear.__init__(self, layer, weights_shape, bias_shape, mean, sigma)\n",
+    "    def build(self):\n",
+    "        linear = Linear.build(self)\n",
+    "        return tf.nn.relu(linear)\n",
+    "    \n",
+    "class Dropout(Layer):\n",
+    "    def __init__(self, layer):\n",
+    "        Layer.__init__(self, layer)\n",
+    "    def build(self):\n",
+    "        data = self.layer.build()\n",
+    "        return tf.nn.dropout(data, keep_prob)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "class NeuralNetwork:\n",
+    "    def __init__(self, logits, BATCH_SIZE, rate = 0.001):\n",
+    "        self.BATCH_SIZE = BATCH_SIZE\n",
+    "        cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits, one_hot_y)\n",
+    "        loss_operation = tf.reduce_mean(cross_entropy)\n",
+    "        optimizer = tf.train.AdamOptimizer(learning_rate = rate)\n",
+    "        self.training_operation = optimizer.minimize(loss_operation)\n",
+    "    def train(self, X_train, y_train):\n",
+    "        sess = tf.get_default_session()\n",
+    "        for offset in range(0, num_examples, self.BATCH_SIZE):\n",
+    "            end = offset + BATCH_SIZE\n",
+    "            batch_x, batch_y = X_train[offset:end], y_train[offset:end]\n",
+    "            sess.run(self.training_operation, feed_dict={x: batch_x, y: batch_y, keep_prob: DROPOT_KEEP_PROP})"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "class AccuracyMeasurement:\n",
+    "    def __init__(self, logits, one_hot_y, BATCH_SIZE):\n",
+    "        correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(one_hot_y, 1))\n",
+    "        self.accuracy_operation = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))\n",
+    "        self.BATCH_SIZE = BATCH_SIZE\n",
+    "    def calculate_accuracy(self, X_data, y_data):\n",
+    "        num_examples = len(X_data)\n",
+    "        total_accuracy = 0\n",
+    "        sess = tf.get_default_session()\n",
+    "        for offset in range(0, num_examples, self.BATCH_SIZE):\n",
+    "            batch_x, batch_y = X_data[offset:offset+BATCH_SIZE], y_data[offset:offset+BATCH_SIZE]\n",
+    "            accuracy = sess.run(self.accuracy_operation, feed_dict={x: batch_x, y: batch_y, keep_prob: 1.0})\n",
+    "            total_accuracy += (accuracy * len(batch_x))\n",
+    "        return total_accuracy / num_examples"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "# Hyperparameters\n",
+    "mu = 0\n",
+    "sigma = 0.1\n",
+    "\n",
+    "# LeNet EPOCH 3: 0.883, EPOCH 10: 0.183\n",
+    "#layer_width = { 'l1': 6, 'l2': 16, 'fc1': 120, 'fc2': 84 }\n",
+    "\n",
+    "# EPOCH 3: 0.829; EPOCH 10: 0.152\n",
+    "layer_width = { 'l1': 14, 'l2': 28, 'l3': 56, 'fc1': 220, 'fc2': 100 }\n",
+    "\n",
+    "def build_architecture(x):\n",
+    "    input_x = Input(x)\n",
+    "    \n",
+    "    conv1 = Convolution2dRelu(input_x, (5, 5, INPUT_DEPTH, layer_width['l1']), [layer_width['l1']], mu, sigma, stride=2)\n",
+    "    #pooled1 = MaxPool2d(conv1)\n",
+    "    \n",
+    "    conv2 = Convolution2dRelu(conv1, (5, 5, layer_width['l1'], layer_width['l2']),[layer_width['l2']], mu, sigma, stride=2)\n",
+    "    #pooled2 = MaxPool2d(conv2)\n",
+    "    \n",
+    "    conv3 = Convolution2dRelu(conv2, (3, 3, layer_width['l2'], layer_width['l3']),[layer_width['l3']], mu, sigma)\n",
+    "    #pooled3 = MaxPool2d(conv3)\n",
+    "    \n",
+    "    flat1 = Flatten(conv3)\n",
+    "    flat2 = Flatten(conv2)\n",
+    "    \n",
+    "    comb = Combine(flat1, flat2)\n",
+    "\n",
+    "    fc1 = LinearRelu(comb, [3*3*layer_width['l3'] + 5*5*layer_width['l2'], layer_width['fc1']], [layer_width['fc1']], mu, sigma)\n",
+    "    #dropout = Dropout(fc1)\n",
+    "    \n",
+    "    fc2 = LinearRelu(fc1, [layer_width['fc1'], layer_width['fc2']], [layer_width['fc2']], mu, sigma)  \n",
+    "    dropout2 = Dropout(fc2)\n",
+    "    \n",
+    "    logits = Linear(dropout2, [layer_width['fc2'], n_classes], [n_classes], mu, sigma)\n",
+    "    \n",
+    "    return logits.build()  "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "logits = build_architecture(x)\n",
+    "network = NeuralNetwork(logits, BATCH_SIZE, rate)\n",
+    "measurement = AccuracyMeasurement(logits, one_hot_y, BATCH_SIZE)\n",
+    "\n",
+    "#save_file = 'model/train_model_grayscale.ckpt'\n",
+    "#save_file = 'model/train_model_no_equalization.ckpt'\n",
+    "save_file = 'model/train_model_3_with_stride.ckpt'"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false,
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "saver = tf.train.Saver()\n",
+    "\n",
+    "with tf.Session() as sess:\n",
+    "    #sess.run(tf.global_variables_initializer())\n",
+    "    saver.restore(sess, save_file)\n",
+    "    num_examples = len(X_train)\n",
+    "    \n",
+    "    print(\"Training...\")\n",
+    "    print()\n",
+    "    for i in range(EPOCHS):\n",
+    "        X_train_processed, y_train = shuffle(X_train_processed, y_train)\n",
+    "        network.train(X_train_processed, y_train)\n",
+    "        \n",
+    "        train_accuracy = measurement.calculate_accuracy(X_train_processed, y_train)\n",
+    "        validation_accuracy = measurement.calculate_accuracy(X_validation_processed, y_validation)\n",
+    "        \n",
+    "        print(\"EPOCH {} ...\".format(i+1))\n",
+    "        print(\"Train Accuracy = {:.3f}\".format(train_accuracy*100))\n",
+    "        print(\"Validation Accuracy = {:.3f}\".format(validation_accuracy*100))\n",
+    "        print()\n",
+    "        \n",
+    "    saver.save(sess, save_file)\n",
+    "    print(\"Model saved\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": false
+   },
+   "outputs": [],
+   "source": [
+    "saver = tf.train.Saver()\n",
+    "\n",
+    "# Launch the graph\n",
+    "with tf.Session() as sess:\n",
+    "    saver.restore(sess, save_file)\n",
+    "\n",
+    "    test_accuracy = measurement.calculate_accuracy(X_test_processed, y_test)\n",
+    "    print(\"Test Accuracy = {:.3f}\".format(test_accuracy*100))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Question 1 \n",
+    "\n",
+    "_Describe how you preprocessed the data. Why did you choose that technique?_"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**Answer:**"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "### Generate data additional data (OPTIONAL!)\n",
+    "### and split the data into training/validation/testing sets here.\n",
+    "### Feel free to use as many code cells as needed."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Question 2\n",
+    "\n",
+    "_Describe how you set up the training, validation and testing data for your model. **Optional**: If you generated additional data, how did you generate the data? Why did you generate the data? What are the differences in the new dataset (with generated data) from the original dataset?_"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**Answer:**"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "### Define your architecture here.\n",
+    "### Feel free to use as many code cells as needed."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Question 3\n",
+    "\n",
+    "_What does your final architecture look like? (Type of model, layers, sizes, connectivity, etc.)  For reference on how to build a deep neural network using TensorFlow, see [Deep Neural Network in TensorFlow\n",
+    "](https://classroom.udacity.com/nanodegrees/nd013/parts/fbf77062-5703-404e-b60c-95b78b2f3f9e/modules/6df7ae49-c61c-4bb2-a23e-6527e69209ec/lessons/b516a270-8600-4f93-a0a3-20dfeabe5da6/concepts/83a3a2a2-a9bd-4b7b-95b0-eb924ab14432) from the classroom._\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**Answer:**"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "### Train your model here.\n",
+    "### Feel free to use as many code cells as needed."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Question 4\n",
+    "\n",
+    "_How did you train your model? (Type of optimizer, batch size, epochs, hyperparameters, etc.)_\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**Answer:**"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Question 5\n",
+    "\n",
+    "\n",
+    "_What approach did you take in coming up with a solution to this problem? It may have been a process of trial and error, in which case, outline the steps you took to get to the final solution and why you chose those steps. Perhaps your solution involved an already well known implementation or architecture. In this case, discuss why you think this is suitable for the current problem._"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**Answer:**"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "---\n",
+    "\n",
+    "## Step 3: Test a Model on New Images\n",
+    "\n",
+    "Take several pictures of traffic signs that you find on the web or around you (at least five), and run them through your classifier on your computer to produce example results. The classifier might not recognize some local signs but it could prove interesting nonetheless.\n",
+    "\n",
+    "You may find `signnames.csv` useful as it contains mappings from the class id (integer) to the actual sign name."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Implementation\n",
+    "\n",
+    "Use the code cell (or multiple code cells, if necessary) to implement the first step of your project. Once you have completed your implementation and are satisfied with the results, be sure to thoroughly answer the questions that follow."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "### Load the images and plot them here.\n",
+    "### Feel free to use as many code cells as needed."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Question 6\n",
+    "\n",
+    "_Choose five candidate images of traffic signs and provide them in the report. Are there any particular qualities of the image(s) that might make classification difficult? It could be helpful to plot the images in the notebook._\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**Answer:**"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "### Run the predictions here.\n",
+    "### Feel free to use as many code cells as needed."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Question 7\n",
+    "\n",
+    "_Is your model able to perform equally well on captured pictures when compared to testing on the dataset? The simplest way to do this check the accuracy of the predictions. For example, if the model predicted 1 out of 5 signs correctly, it's 20% accurate._\n",
+    "\n",
+    "_**NOTE:** You could check the accuracy manually by using `signnames.csv` (same directory). This file has a mapping from the class id (0-42) to the corresponding sign name. So, you could take the class id the model outputs, lookup the name in `signnames.csv` and see if it matches the sign from the image._\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**Answer:**"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "### Visualize the softmax probabilities here.\n",
+    "### Feel free to use as many code cells as needed."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Question 8\n",
+    "\n",
+    "*Use the model's softmax probabilities to visualize the **certainty** of its predictions, [`tf.nn.top_k`](https://www.tensorflow.org/versions/r0.12/api_docs/python/nn.html#top_k) could prove helpful here. Which predictions is the model certain of? Uncertain? If the model was incorrect in its initial prediction, does the correct prediction appear in the top k? (k should be 5 at most)*\n",
+    "\n",
+    "`tf.nn.top_k` will return the values and indices (class ids) of the top k predictions. So if k=3, for each sign, it'll return the 3 largest probabilities (out of a possible 43) and the correspoding class ids.\n",
+    "\n",
+    "Take this numpy array as an example:\n",
+    "\n",
+    "```\n",
+    "# (5, 6) array\n",
+    "a = np.array([[ 0.24879643,  0.07032244,  0.12641572,  0.34763842,  0.07893497,\n",
+    "         0.12789202],\n",
+    "       [ 0.28086119,  0.27569815,  0.08594638,  0.0178669 ,  0.18063401,\n",
+    "         0.15899337],\n",
+    "       [ 0.26076848,  0.23664738,  0.08020603,  0.07001922,  0.1134371 ,\n",
+    "         0.23892179],\n",
+    "       [ 0.11943333,  0.29198961,  0.02605103,  0.26234032,  0.1351348 ,\n",
+    "         0.16505091],\n",
+    "       [ 0.09561176,  0.34396535,  0.0643941 ,  0.16240774,  0.24206137,\n",
+    "         0.09155967]])\n",
+    "```\n",
+    "\n",
+    "Running it through `sess.run(tf.nn.top_k(tf.constant(a), k=3))` produces:\n",
+    "\n",
+    "```\n",
+    "TopKV2(values=array([[ 0.34763842,  0.24879643,  0.12789202],\n",
+    "       [ 0.28086119,  0.27569815,  0.18063401],\n",
+    "       [ 0.26076848,  0.23892179,  0.23664738],\n",
+    "       [ 0.29198961,  0.26234032,  0.16505091],\n",
+    "       [ 0.34396535,  0.24206137,  0.16240774]]), indices=array([[3, 0, 5],\n",
+    "       [0, 1, 4],\n",
+    "       [0, 5, 1],\n",
+    "       [1, 3, 5],\n",
+    "       [1, 4, 3]], dtype=int32))\n",
+    "```\n",
+    "\n",
+    "Looking just at the first row we get `[ 0.34763842,  0.24879643,  0.12789202]`, you can confirm these are the 3 largest probabilities in `a`. You'll also notice `[3, 0, 5]` are the corresponding indices."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "**Answer:**"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "> **Note**: Once you have completed all of the code implementations and successfully answered each question above, you may finalize your work by exporting the iPython Notebook as an HTML document. You can do this by using the menu above and navigating to  \\n\",\n",
+    "    \"**File -> Download as -> HTML (.html)**. Include the finished document along with this notebook as your submission."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "anaconda-cloud": {},
+  "kernelspec": {
+   "display_name": "Python [conda env:IntroToTensorFlow]",
+   "language": "python",
+   "name": "conda-env-IntroToTensorFlow-py"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.5.2"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 1
+}
