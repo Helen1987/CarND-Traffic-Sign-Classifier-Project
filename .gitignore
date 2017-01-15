@@ -6,3 +6,4 @@ models
 *.p
 model/
 traffic-signs-data.zip
+newimages_original/
