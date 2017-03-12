@@ -22,12 +22,8 @@ Run this command at the terminal prompt to install [OpenCV](http://opencv.org/).
 
 ### Dataset
 
-1. [Download the dataset](https://d17h27t6h515a5.cloudfront.net/topher/2016/November/581faac4_traffic-signs-data/traffic-signs-data.zip). This is a pickled dataset in which we've already resized the images to 32x32.
-2. Clone the project and start the notebook.
-```
-git clone https://github.com/udacity/CarND-Traffic-Signs
-cd CarND-Traffic-Signs
-jupyter notebook Traffic_Signs_Recognition.ipynb
-```
-3. Follow the instructions in the `Traffic_Signs_Recognition.ipynb` notebook.
+[Download the dataset](https://d17h27t6h515a5.cloudfront.net/topher/2016/November/581faac4_traffic-signs-data/traffic-signs-data.zip). This is a pickled dataset in which images are resized to 32x32. Put it in _traffic-signs-data_ folder
 
+### Result
+
+You can find write up for the project inside [Jupyter notebook](Traffic_Sign_Classifier.ipynb) or [in HTML format](Traffic_Sign_Classifier.html)
